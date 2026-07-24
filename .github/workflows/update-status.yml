@@ -1,0 +1,31 @@
+name: Update Protege Status Flag
+
+on:
+  repository_dispatch:
+    types: [protege-status]
+
+permissions:
+  contents: write
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write status flag
+        run: |
+          VALUE="${{ github.event.client_payload.status }}"
+          if [ "$VALUE" != "0" ] && [ "$VALUE" != "1" ]; then
+            echo "Invalid status: $VALUE"
+            exit 1
+          fi
+          printf "%s\n" "$VALUE" > protege_status.txt
+
+      - name: Commit status change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add protege_status.txt
+          git commit -m "Update Protege status flag to ${{ github.event.client_payload.status }}" || exit 0
+          git push
